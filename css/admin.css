@@ -2,6 +2,117 @@
    ADMIN DASHBOARD STYLES
    ============================================ */
 
+/* ============================================
+   Login Screen
+   ============================================ */
+.login-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--bg-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+}
+
+.login-container {
+    width: 100%;
+    max-width: 420px;
+    padding: 2rem;
+}
+
+.login-logo {
+    text-align: center;
+    font-family: var(--font-heading);
+    font-size: 2rem;
+    margin-bottom: 2rem;
+}
+
+.login-form {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+}
+
+.login-title {
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+    color: var(--neon);
+    text-shadow: 0 0 10px var(--neon-glow);
+    margin-bottom: 0.3rem;
+    text-align: center;
+}
+
+.login-subtitle {
+    color: var(--text-muted);
+    font-family: var(--font-accent);
+    font-size: 0.85rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.login-field {
+    margin-bottom: 1.2rem;
+}
+
+.login-field label {
+    display: block;
+    font-family: var(--font-accent);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+}
+
+.login-field label i {
+    color: var(--neon);
+    margin-right: 0.3rem;
+}
+
+.login-field input {
+    width: 100%;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    transition: var(--transition);
+    outline: none;
+}
+
+.login-field input:focus {
+    border-color: var(--neon);
+    box-shadow: 0 0 15px var(--neon-glow);
+}
+
+.login-btn {
+    width: 100%;
+    margin-top: 0.5rem;
+    padding: 0.9rem;
+    font-size: 1rem;
+    justify-content: center;
+}
+
+.login-error {
+    display: none;
+    margin-top: 1rem;
+    padding: 0.7rem 1rem;
+    background: rgba(255, 50, 50, 0.1);
+    border: 1px solid rgba(255, 50, 50, 0.3);
+    border-radius: 8px;
+    color: #ff5555;
+    font-family: var(--font-accent);
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+/* Logout Button */
+.logout-link:hover {
+    color: #ff5555 !important;
+}
+
 .admin-body {
     overflow: hidden;
     height: 100vh;
