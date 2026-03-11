@@ -85,8 +85,8 @@ function destroySession() {
    UI Control
    ============================================ */
 function showLoginScreen() {
+    document.body.classList.remove('authenticated');
     document.getElementById('loginScreen').style.display = 'flex';
-    document.getElementById('adminLayout').style.display = 'none';
 
     const credentials = getStoredCredentials();
     if (credentials) {
@@ -100,7 +100,7 @@ function showLoginScreen() {
 
 function showDashboard() {
     document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('adminLayout').style.display = 'grid';
+    document.body.classList.add('authenticated');
 }
 
 function showLoginError(message) {

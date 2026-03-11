@@ -118,8 +118,16 @@
     height: 100vh;
 }
 
+/* Admin layout ALWAYS hidden by default - only shown via JS class */
+#adminLayout {
+    display: none !important;
+}
+
+body.authenticated #adminLayout {
+    display: grid !important;
+}
+
 .admin-layout {
-    display: grid;
     grid-template-columns: 260px 1fr;
     height: 100vh;
     overflow: hidden;
