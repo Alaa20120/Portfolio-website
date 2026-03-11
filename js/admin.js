@@ -2,7 +2,12 @@
    ADMIN DASHBOARD - CRUD Operations
    ============================================ */
 
-document.addEventListener('DOMContentLoaded', () => {
+let adminInitialized = false;
+
+function initAdminDashboard() {
+    if (adminInitialized) return;
+    adminInitialized = true;
+
     // --- Panel Navigation ---
     initPanelNav();
 
@@ -30,6 +35,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Mobile Toggle ---
     initMobileToggle();
+}
+
+// Only initialize dashboard if already authenticated (valid session)
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof isAuthenticated !== 'undefined' && isAuthenticated) {
+        initAdminDashboard();
+    }
 });
 
 /* ============================================

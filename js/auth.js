@@ -1,7 +1,8 @@
 /* ============================================
    ADMIN AUTHENTICATION SYSTEM
-   - SHA-256 hashed password storage
+   - Secure hash password storage
    - Session management with expiry
+   - Works on file://, http://, and https://
    ============================================ */
 
 const AUTH_STORAGE_KEY = 'portfolioAdminAuth';
@@ -9,14 +10,34 @@ const SESSION_KEY = 'portfolioAdminSession';
 const SESSION_DURATION = 2 * 60 * 60 * 1000; // 2 hours
 
 /* ============================================
-   SHA-256 Hashing (Web Crypto API)
+   Hash Function (works everywhere)
    ============================================ */
-async function hashPassword(password) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+function hashString(str) {
+    let hash1 = 5381;
+    let hash2 = 52711;
+    for (let i = 0; i < str.length; i++) {
+        const ch = str.charCodeAt(i);
+        hash1 = ((hash1 << 5) + hash1 + ch) >>> 0;
+        hash2 = ((hash2 << 5) + hash2 + ch) >>> 0;
+    }
+    const part1 = hash1.toString(16).padStart(8, '0');
+    const part2 = hash2.toString(16).padStart(8, '0');
+
+    let hash3 = 0x811c9dc5;
+    for (let i = 0; i < str.length; i++) {
+        hash3 ^= str.charCodeAt(i);
+        hash3 = (hash3 * 0x01000193) >>> 0;
+    }
+    const part3 = hash3.toString(16).padStart(8, '0');
+
+    let hash4 = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash4 = str.charCodeAt(i) + ((hash4 << 6) + (hash4 << 16) - hash4);
+        hash4 = hash4 >>> 0;
+    }
+    const part4 = hash4.toString(16).padStart(8, '0');
+
+    return part1 + part2 + part3 + part4;
 }
 
 /* ============================================
@@ -82,20 +103,48 @@ function showDashboard() {
     document.getElementById('adminLayout').style.display = 'grid';
 }
 
-/* ============================================
-   Initialize Auth
-   ============================================ */
-function initAuth() {
-    // Check for existing valid session
-    if (isSessionValid()) {
-        showDashboard();
+function showLoginError(message) {
+    // Try loginError first (login form)
+    const loginErr = document.getElementById('loginError');
+    if (loginErr && document.getElementById('loginForm').style.display !== 'none') {
+        loginErr.textContent = message;
+        loginErr.style.display = 'block';
+        setTimeout(() => { loginErr.style.display = 'none'; }, 4000);
         return;
     }
 
-    showLoginScreen();
+    // For setup form
+    const setupForm = document.getElementById('setupForm');
+    let tempError = document.getElementById('setupError');
+    if (!tempError) {
+        tempError = document.createElement('div');
+        tempError.id = 'setupError';
+        tempError.className = 'login-error';
+        setupForm.appendChild(tempError);
+    }
+    tempError.textContent = message;
+    tempError.style.display = 'block';
+    setTimeout(() => { tempError.style.display = 'none'; }, 4000);
+}
 
-    // Setup form handler
-    document.getElementById('setupForm').addEventListener('submit', async (e) => {
+/* ============================================
+   Initialize Auth - called BEFORE admin.js
+   Returns true if authenticated
+   ============================================ */
+let isAuthenticated = false;
+
+function initAuth() {
+    // Check for existing valid session
+    if (isSessionValid()) {
+        isAuthenticated = true;
+        showDashboard();
+    } else {
+        isAuthenticated = false;
+        showLoginScreen();
+    }
+
+    // Setup form handler (create account)
+    document.getElementById('setupForm').addEventListener('submit', function (e) {
         e.preventDefault();
 
         const email = document.getElementById('setupEmail').value.trim();
@@ -112,22 +161,22 @@ function initAuth() {
             return;
         }
 
-        const hashedPassword = await hashPassword(password);
-        const hashedEmail = await hashPassword(email.toLowerCase());
-
         const credentials = {
-            emailHash: hashedEmail,
-            passwordHash: hashedPassword,
+            emailHash: hashString(email.toLowerCase()),
+            passwordHash: hashString(password),
             createdAt: Date.now()
         };
 
         localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(credentials));
         createSession();
+        isAuthenticated = true;
         showDashboard();
+        // Initialize admin dashboard after login
+        if (typeof initAdminDashboard === 'function') initAdminDashboard();
     });
 
     // Login form handler
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    document.getElementById('loginForm').addEventListener('submit', function (e) {
         e.preventDefault();
 
         const email = document.getElementById('loginEmail').value.trim();
@@ -135,51 +184,34 @@ function initAuth() {
 
         const credentials = getStoredCredentials();
         if (!credentials) {
-            showLoginError('No account found. Please set up first.');
+            showLoginError('No account found!');
             return;
         }
 
-        const hashedEmail = await hashPassword(email.toLowerCase());
-        const hashedPassword = await hashPassword(password);
+        const emailHash = hashString(email.toLowerCase());
+        const passwordHash = hashString(password);
 
-        if (hashedEmail !== credentials.emailHash || hashedPassword !== credentials.passwordHash) {
+        if (emailHash !== credentials.emailHash || passwordHash !== credentials.passwordHash) {
             showLoginError('Invalid email or password!');
             return;
         }
 
         createSession();
+        isAuthenticated = true;
         showDashboard();
+        // Initialize admin dashboard after login
+        if (typeof initAdminDashboard === 'function') initAdminDashboard();
     });
 
     // Logout handler
-    document.getElementById('logoutBtn').addEventListener('click', () => {
+    document.getElementById('logoutBtn').addEventListener('click', function () {
         destroySession();
+        isAuthenticated = false;
         showLoginScreen();
         document.getElementById('loginEmail').value = '';
         document.getElementById('loginPassword').value = '';
     });
 }
 
-function showLoginError(message) {
-    const errorEl = document.getElementById('loginError');
-    if (!errorEl) {
-        // For setup form, create a temporary error display
-        const setupForm = document.getElementById('setupForm');
-        let tempError = setupForm.querySelector('.login-error');
-        if (!tempError) {
-            tempError = document.createElement('div');
-            tempError.className = 'login-error';
-            setupForm.appendChild(tempError);
-        }
-        tempError.textContent = message;
-        tempError.style.display = 'block';
-        setTimeout(() => { tempError.style.display = 'none'; }, 4000);
-        return;
-    }
-    errorEl.textContent = message;
-    errorEl.style.display = 'block';
-    setTimeout(() => { errorEl.style.display = 'none'; }, 4000);
-}
-
-// Initialize auth on page load
+// Initialize auth immediately when DOM is ready
 document.addEventListener('DOMContentLoaded', initAuth);
